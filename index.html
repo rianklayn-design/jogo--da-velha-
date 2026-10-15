@@ -1,0 +1,322 @@
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo da Velha Moderno</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti for winning celebrations -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom smooth transition for cells */
+        .cell-transition {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
+
+    <!-- Header / Navbar -->
+    <header class="w-full py-6 px-4 sm:px-8 flex justify-between items-center max-w-4xl mx-auto">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-rose-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                <span class="text-white font-bold text-xl">#</span>
+            </div>
+            <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-indigo-400 to-rose-400 bg-clip-text text-transparent">
+                Tic-Tac-Toe
+            </h1>
+        </div>
+        <!-- Dark/Light Theme toggle or Reset Placar -->
+        <button id="reset-score-btn" class="text-xs sm:text-sm font-medium px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition shadow-sm active:scale-95 flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            Zerar Placar
+        </button>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 flex flex-col items-center justify-center px-4 py-6 max-w-md mx-auto w-full">
+        
+        <!-- Scoreboard -->
+        <div class="grid grid-cols-3 gap-3 w-full mb-6">
+            <!-- Player X Score -->
+            <div id="score-x-card" class="bg-slate-800/80 border border-indigo-500/50 rounded-2xl p-3 text-center flex flex-col items-center shadow-lg shadow-indigo-950/30 transition-all duration-300 ring-2 ring-indigo-500">
+                <span class="text-xs font-semibold uppercase tracking-wider text-indigo-400 mb-1">Jogador X</span>
+                <span id="score-x" class="text-2xl font-black text-white">0</span>
+            </div>
+            <!-- Ties Score -->
+            <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-3 text-center flex flex-col items-center shadow-lg transition-all duration-300">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Empates</span>
+                <span id="score-ties" class="text-2xl font-black text-slate-200">0</span>
+            </div>
+            <!-- Player O Score -->
+            <div id="score-o-card" class="bg-slate-800/80 border border-slate-700 rounded-2xl p-3 text-center flex flex-col items-center shadow-lg transition-all duration-300">
+                <span class="text-xs font-semibold uppercase tracking-wider text-rose-400 mb-1">Jogador O</span>
+                <span id="score-o" class="text-2xl font-black text-white">0</span>
+            </div>
+        </div>
+
+        <!-- Status / Turn Banner -->
+        <div class="w-full bg-slate-800/50 border border-slate-700/60 rounded-2xl py-3 px-6 mb-6 flex items-center justify-center shadow-inner">
+            <p id="game-status" class="text-sm font-medium tracking-wide flex items-center gap-2">
+                Turno do Jogador <span id="current-turn-badge" class="px-2.5 py-1 rounded-lg bg-indigo-500/20 text-indigo-400 font-bold border border-indigo-500/30">X</span>
+            </p>
+        </div>
+
+        <!-- Game Board (3x3 Grid) -->
+        <div class="grid grid-cols-3 gap-3.5 w-full aspect-square bg-slate-800/40 p-3.5 rounded-3xl border border-slate-700/60 shadow-2xl backdrop-blur-sm relative">
+            <!-- Cells -->
+            <button data-index="0" class="cell cell-transition bg-slate-800 hover:bg-slate-700/80 rounded-2xl flex items-center justify-center text-5xl font-black shadow-md border border-slate-700/50 focus:outline-none active:scale-95"></button>
+            <button data-index="1" class="cell cell-transition bg-slate-800 hover:bg-slate-700/80 rounded-2xl flex items-center justify-center text-5xl font-black shadow-md border border-slate-700/50 focus:outline-none active:scale-95"></button>
+            <button data-index="2" class="cell cell-transition bg-slate-800 hover:bg-slate-700/80 rounded-2xl flex items-center justify-center text-5xl font-black shadow-md border border-slate-700/50 focus:outline-none active:scale-95"></button>
+            <button data-index="3" class="cell cell-transition bg-slate-800 hover:bg-slate-700/80 rounded-2xl flex items-center justify-center text-5xl font-black shadow-md border border-slate-700/50 focus:outline-none active:scale-95"></button>
+            <button data-index="4" class="cell cell-transition bg-slate-800 hover:bg-slate-700/80 rounded-2xl flex items-center justify-center text-5xl font-black shadow-md border border-slate-700/50 focus:outline-none active:scale-95"></button>
+            <button data-index="5" class="cell cell-transition bg-slate-800 hover:bg-slate-700/80 rounded-2xl flex items-center justify-center text-5xl font-black shadow-md border border-slate-700/50 focus:outline-none active:scale-95"></button>
+            <button data-index="6" class="cell cell-transition bg-slate-800 hover:bg-slate-700/80 rounded-2xl flex items-center justify-center text-5xl font-black shadow-md border border-slate-700/50 focus:outline-none active:scale-95"></button>
+            <button data-index="7" class="cell cell-transition bg-slate-800 hover:bg-slate-700/80 rounded-2xl flex items-center justify-center text-5xl font-black shadow-md border border-slate-700/50 focus:outline-none active:scale-95"></button>
+            <button data-index="8" class="cell cell-transition bg-slate-800 hover:bg-slate-700/80 rounded-2xl flex items-center justify-center text-5xl font-black shadow-md border border-slate-700/50 focus:outline-none active:scale-95"></button>
+        </div>
+
+        <!-- Controls / Restart Button -->
+        <button id="restart-btn" class="w-full mt-6 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-semibold shadow-lg shadow-indigo-600/30 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            Nova Partida
+        </button>
+
+    </main>
+
+    <!-- Custom Modal Message Box (No alert() used) -->
+    <div id="message-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-slate-800 border border-slate-700 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl transform scale-95 transition-transform duration-300" id="modal-content-box">
+            <div id="modal-icon" class="w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center bg-indigo-500/20 text-indigo-400 text-3xl font-bold border border-indigo-500/30">🏆</div>
+            <h3 id="modal-title" class="text-xl font-bold text-white mb-2">Fim de Jogo!</h3>
+            <p id="modal-message" class="text-slate-300 text-sm mb-6">O Jogador X venceu a partida!</p>
+            <button id="modal-close-btn" class="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg transition active:scale-95">
+                Jogar Novamente
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="py-6 text-center text-xs text-slate-500">
+        Desenvolvido com HTML5, Tailwind CSS e JavaScript Moderno.
+    </footer>
+
+    <!-- Game Logic Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const cells = document.querySelectorAll('.cell');
+            const statusDisplay = document.getElementById('game-status');
+            const turnBadge = document.getElementById('current-turn-badge');
+            const restartBtn = document.getElementById('restart-btn');
+            const resetScoreBtn = document.getElementById('reset-score-btn');
+            
+            // Score elements
+            const scoreXEl = document.getElementById('score-x');
+            const scoreOEl = document.getElementById('score-o');
+            const scoreTiesEl = document.getElementById('score-ties');
+            const scoreXCard = document.getElementById('score-x-card');
+            const scoreOCard = document.getElementById('score-o-card');
+
+            // Modal elements
+            const messageModal = document.getElementById('message-modal');
+            const modalContentBox = document.getElementById('modal-content-box');
+            const modalTitle = document.getElementById('modal-title');
+            const modalMessage = document.getElementById('modal-message');
+            const modalCloseBtn = document.getElementById('modal-close-btn');
+            const modalIcon = document.getElementById('modal-icon');
+
+            // Game State variables
+            let board = ['', '', '', '', '', '', '', '', ''];
+            let currentPlayer = 'X'; // 'X' or 'O'
+            let isGameActive = true;
+            let scores = { X: 0, O: 0, ties: 0 };
+
+            // Winning conditions
+            const winningConditions = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+                [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+                [0, 4, 8], [2, 4, 6]              // Diagonals
+            ];
+
+            // Handle cell click event
+            function handleCellClick(e) {
+                const clickedCell = e.target;
+                const cellIndex = parseInt(clickedCell.getAttribute('data-index'));
+
+                if (board[cellIndex] !== '' || !isGameActive) {
+                    return;
+                }
+
+                // Update board and UI
+                board[cellIndex] = currentPlayer;
+                clickedCell.textContent = currentPlayer;
+                
+                // Style cell based on player
+                if (currentPlayer === 'X') {
+                    clickedCell.classList.add('text-indigo-400');
+                } else {
+                    clickedCell.classList.add('text-rose-400');
+                }
+
+                checkResultValidation();
+            }
+
+            // Check for win or tie
+            function checkResultValidation() {
+                let roundWon = false;
+                let winningCombo = [];
+
+                for (let i = 0; i < winningConditions.length; i++) {
+                    const [a, b, c] = winningConditions[i];
+                    if (board[a] === '' || board[b] === '' || board[c] === '') {
+                        continue;
+                    }
+                    if (board[a] === board[b] && board[b] === board[c]) {
+                        roundWon = true;
+                        winningCombo = [a, b, c];
+                        break;
+                    }
+                }
+
+                if (roundWon) {
+                    isGameActive = false;
+                    scores[currentPlayer]++;
+                    updateScoreboard();
+                    highlightWinningCells(winningCombo);
+                    triggerConfetti();
+                    showModal(`O Jogador ${currentPlayer} Venceu!`, `Parabéns, jogador ${currentPlayer}, você conquistou esta rodada!`, '🏆');
+                    return;
+                }
+
+                let roundDraw = !board.includes('');
+                if (roundDraw) {
+                    isGameActive = false;
+                    scores.ties++;
+                    updateScoreboard();
+                    showModal('Empate!', 'A partida terminou sem vencedores. Tentem novamente!', '🤝');
+                    return;
+                }
+
+                // Switch player turn
+                currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                updateTurnIndicator();
+            }
+
+            // Highlight winning cells with glowing effect
+            function highlightWinningCells(combo) {
+                combo.forEach(index => {
+                    const cell = cells[index];
+                    cell.classList.add('bg-emerald-500/20', 'border-emerald-500/50');
+                    if(currentPlayer === 'X') {
+                        cell.classList.replace('text-indigo-400', 'text-emerald-400');
+                    } else {
+                        cell.classList.replace('text-rose-400', 'text-emerald-400');
+                    }
+                });
+            }
+
+            // Update UI turn indicators and styling highlights
+            function updateTurnIndicator() {
+                turnBadge.textContent = currentPlayer;
+                if (currentPlayer === 'X') {
+                    turnBadge.className = "px-2.5 py-1 rounded-lg bg-indigo-500/20 text-indigo-400 font-bold border border-indigo-500/30";
+                    scoreXCard.className = "bg-slate-800/80 border border-indigo-500/50 rounded-2xl p-3 text-center flex flex-col items-center shadow-lg shadow-indigo-950/30 transition-all duration-300 ring-2 ring-indigo-500";
+                    scoreOCard.className = "bg-slate-800/80 border border-slate-700 rounded-2xl p-3 text-center flex flex-col items-center shadow-lg transition-all duration-300";
+                } else {
+                    turnBadge.className = "px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-400 font-bold border border-rose-500/30";
+                    scoreOCard.className = "bg-slate-800/80 border border-rose-500/50 rounded-2xl p-3 text-center flex flex-col items-center shadow-lg shadow-rose-950/30 transition-all duration-300 ring-2 ring-rose-500";
+                    scoreXCard.className = "bg-slate-800/80 border border-slate-700 rounded-2xl p-3 text-center flex flex-col items-center shadow-lg transition-all duration-300";
+                }
+            }
+
+            // Update scoreboard numbers
+            function updateScoreboard() {
+                scoreXEl.textContent = scores.X;
+                scoreOEl.textContent = scores.O;
+                scoreTiesEl.textContent = scores.ties;
+            }
+
+            // Reset Board for next round
+            function restartGame() {
+                board = ['', '', '', '', '', '', '', '', ''];
+                isGameActive = true;
+                currentPlayer = 'X';
+                updateTurnIndicator();
+
+                cells.forEach(cell => {
+                    cell.textContent = '';
+                    cell.className = 'cell cell-transition bg-slate-800 hover:bg-slate-700/80 rounded-2xl flex items-center justify-center text-5xl font-black shadow-md border border-slate-700/50 focus:outline-none active:scale-95';
+                });
+
+                closeModal();
+            }
+
+            // Reset Scoreboard entirely
+            function resetScore() {
+                scores = { X: 0, O: 0, ties: 0 };
+                updateScoreboard();
+                restartGame();
+            }
+
+            // Confetti effect on victory
+            function triggerConfetti() {
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            }
+
+            // Modal Controls (Replacing native alert)
+            function showModal(title, message, icon) {
+                modalTitle.textContent = title;
+                modalMessage.textContent = message;
+                modalIcon.textContent = icon;
+                
+                messageModal.classList.remove('opacity-0', 'pointer-events-none');
+                modalContentBox.classList.remove('scale-95');
+                modalContentBox.classList.add('scale-100');
+            }
+
+            function closeModal() {
+                modalContentBox.classList.remove('scale-100');
+                modalContentBox.classList.add('scale-95');
+                messageModal.classList.add('opacity-0', 'pointer-events-none');
+            }
+
+            // Event Listeners
+            cells.forEach(cell => cell.addEventListener('click', handleCellClick));
+            restartBtn.addEventListener('click', restartGame);
+            resetScoreBtn.addEventListener('click', resetScore);
+            modalCloseBtn.addEventListener('click', restartGame);
+
+            // Close modal on background click
+            messageModal.addEventListener('click', (e) => {
+                if (e.target === messageModal) {
+                    restartGame();
+                }
+            });
+
+            // Initial setup
+            updateTurnIndicator();
+        });
+    </script>
+</body>
+</html>
